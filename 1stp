@@ -1,0 +1,114 @@
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract SocialPlatform is ERC721, Ownable {
+
+    uint256 public taskId;
+
+    uint256 public tokenId;
+
+    mapping (uint256 => Task) public tasks;
+
+    mapping (uint256 => Token) public tokens;
+
+    struct Task {
+
+        string title;
+
+        string description;
+
+        bool isCompleted;
+
+        uint256 reward;
+
+    }
+
+    struct Token {
+
+        uint256 tokenId;
+
+        bool isRedeemed;
+
+    }
+
+    event NewTask(uint256 id, string title, string description, uint256 reward);
+
+    event TaskCompleted(uint256 id);
+
+    event NewToken(uint256 id, uint256 tokenId);
+
+    constructor(string memory _name, string memory _symbol)
+
+        ERC721(_name, _symbol)
+
+    {
+
+        taskId = 0;
+
+        tokenId = 0;
+
+    }
+
+    function createTask(string memory _title, string memory _description, uint256 _reward) public onlyOwner {
+
+        Task memory newTask = Task(_title, _description, false, _reward);
+
+        tasks[taskId] = newTask;
+
+        emit NewTask(taskId, _title, _description, _reward);
+
+        taskId++;
+
+    }
+
+    function completeTask(uint256 _id) public {
+
+        require(!tasks[_id].isCompleted, "Task has already been completed");
+
+        tasks[_id].isCompleted = true;
+
+        uint256 reward = tasks[_id].reward;
+
+        _mint(msg.sender, tokenId);
+
+        Token memory newToken = Token(tokenId, false);
+
+        tokens[tokenId] = newToken;
+
+        emit TaskCompleted(_id);
+
+        emit NewToken(tokenId, tokenId);
+
+        tokenId++;
+
+    }
+
+    function redeemToken(uint256 _id) public {
+
+        require(ownerOf(_id) == msg.sender, "You do not own this token");
+
+        require(!tokens[_id].isRedeemed, "Token has already been redeemed");
+
+        tokens[_id].isRedeemed = true;
+
+        // Transfer reward to user's address
+
+    }
+
+    function getTask(uint256 _id) public view returns (string memory, string memory, bool, uint256) {
+
+        return (tasks[_id].title, tasks[_id].description, tasks[_id].isCompleted, tasks[_id].reward);
+
+    }
+
+    function getToken(uint256 _id) public view returns (uint256, bool) {
+
+        return (tokens[_id].tokenId, tokens[_id].isRedeemed);
+
+    }
+
+}
+
